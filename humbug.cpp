@@ -8,17 +8,54 @@
 using namespace std;
 
 // Class for representing the game state
+
+static const vector<pair<int, int>> directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}}; 
+
+struct Coordinate {
+    int x;
+    int y;
+
+    Coordinate(int x_val, int y_val) : x(x_val), y(y_val) {}
+};
+
+// Class for representing actions
+class Action {
+public:
+    Coordinate start;
+    Coordinate end;
+
+    string to_string() const {
+        return "Move insect at {" + std::to_string(start.x) + ',' + std::to_string(start.y) + "} to {" + std::to_string(end.x) + ',' + std::to_string(end.y) + "} .";
+    }
+};
+
 class State {
 public:
     vector<string> grid;
     int n;
     int m;
+    int starCount; //==0 for a goal state
+    int moves; //moves remaining
 
-    static const vector<pair<int, int>> directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}}; 
+    State(vector<string>g, int maxMoves=10){
+        n = static_cast<int>(g.size());     
+        m = static_cast<int>(g[0].length());  
+        for(auto line: g){
+            grid.push_back(line);
+        }
+        starCount = 0;
+        getStarCount();
+        this->moves = maxMoves;
+        
+    }
 
-    State(const vector<string>& g = {}) : grid(g) {
-        n = g.size();
-        m = g[0].length();
+    void getStarCount(){
+        for(int i = 0; i<n; i++){
+            for(int j = 0; j<m; j++){
+                // cout << grid[i] << endl;
+                if(grid[i][j]=='Y') starCount++;
+            }
+        }
     }
 
     bool operator==(const State &other) const {
@@ -48,35 +85,54 @@ public:
         }
     };
 
-    //get possible actions from this state -> the OG function! (PGSLFH)
-    vector<Action> getActions(){
-        for(int i = 1; i<n; i+=2){ 
-            for(int j = 1; i<m; j+=2){
+    vector<Action> getActions() {
+        vector<Action> actions;
+        for (int i = 1; i < n; i += 2) {
+            for (int j = 1; j < m; j += 2) {
                 char insect = grid[i][j];
-                Coordinate insectPos(i,j);
-                if(insect == 'P') return getActionsSpider(insectPos);
-                else if(insect=='G') return getActionHopper();
-                else if (insect=='S') return getActionsSnail();
-                else if(insect=='L') return getActionsLadybug();
-                else if(insect=='H') return getActionHBee();
-                else{
-                    return getActionBFly();
+                Coordinate insectPos(i, j);
+                
+                if (insect == 'P') {
+                    // Append actions for spider
+                    vector<Action> spiderActions = getActionsSpider(insectPos);
+                    actions.insert(actions.end(), spiderActions.begin(), spiderActions.end());
+                } else if (insect == 'G') {
+                    // Append actions for hopper
+                    vector<Action> hopperActions = getActionHopper(insectPos);
+                    actions.insert(actions.end(), hopperActions.begin(), hopperActions.end());
+                } else if (insect == 'S') {
+                    // Append actions for snail
+                    vector<Action> snailActions = getActionsSnail(insectPos);
+                    actions.insert(actions.end(), snailActions.begin(), snailActions.end());
+                } else if (insect == 'L') {
+                    // Append actions for ladybug
+                    vector<Action> ladybugActions = getActionsLadybug(insectPos);
+                    actions.insert(actions.end(), ladybugActions.begin(), ladybugActions.end());
+                } else if (insect == 'H') {
+                    // Append actions for HBee
+                    vector<Action> hBeeActions = getActionHBee(insectPos);
+                    actions.insert(actions.end(), hBeeActions.begin(), hBeeActions.end());
+                } else {
+                    // No actions for other insects
                 }
             }
         }
-    }
 
-    bool isVacant(int x, int y){
-        return grid[x][y]=='X' || grid[x][y]=='Y';
+        return actions;
+}
+
+
+    bool isVacant(int x, int y){  return grid[x][y]=='X' || grid[x][y]=='Y';
     }
 
     bool isWallAhead(int x, int y, pair<int,int> dir){
-        return grid[x+dir.first][y+dir.first]=='W';
+        return grid[x+dir.first][y+dir.second]=='W';
     }
 
     bool isInGrid(int x, int y){
-        return x<n && y<m; 
+        return x<n && y<m && x>=0 && y>=0 && grid[x][y]!='.'; 
     }
+
 
     vector<Action> getActionsSpider(const Coordinate &spiderPos){
         // spider can keep moving in one direction, unless obstacle comes.
@@ -92,20 +148,17 @@ public:
             
             // Keep moving in the same direction until boundary or obstacle is encountered
             while (isInGrid(nextX, nextY)) {
-                curX = nextX - 1;
-                curY = nextY - 1;
+                curX = nextX - 2*dir.first;
+                curY = nextY - 2*dir.second;
 
-                // check for wall...
-                if(isWallAhead(nextX, nextY, dir)) break;
-
-                //check for insect...
-                if(!isVacant(nextX, nextY)) break;
-
-                actions.push_back({spiderPos, Coordinate(nextX, nextY)});
-                
+                // check for wall|insect...
+                if(isWallAhead(nextX, nextY, dir) || (isInGrid(nextX+2*dir.first, nextY+2*dir.second) && !isVacant(nextX+2*dir.first, nextY+2*dir.second))){
+                    actions.push_back({spiderPos, Coordinate(nextX, nextY)});
+                    break;
+                }
                 // Update nextX and nextY for the next step in the same direction
-                nextX += dir.first;
-                nextY += dir.second;
+                nextX += 2*dir.first;
+                nextY += 2*dir.second;
             }
         }
 
@@ -143,10 +196,17 @@ public:
 
             // Check if the next position is within the grid bounds
             if (isInGrid(nextX, nextY)) {
-                // Check if the next position is vacant and accesible
-                if (isVacant(nextX, nextY) && isVacant(nextX-2, nextY-2) && !isWallAhead(ladybugPos.x, ladybugPos.y, dir) && !isWallAhead(nextX-2, nextY-2, dir)) {
+                // Check if the first step is vacant and accesible
+                if (isVacant(nextX-2*dir.first, nextY-2*dir.second) && !isWallAhead(ladybugPos.x, ladybugPos.y, dir)) {
+                    
+                    // check if second step is vacant and accesible
+                    if((isVacant(nextX, nextY) && !isWallAhead(nextX-2*dir.first, nextY-2*dir.second, dir))){
                     // If it's a valid move, append the destination coordinate to actions
-                    actions.push_back({ladybugPos, Coordinate(nextX, nextY)});
+                        actions.push_back({ladybugPos, Coordinate(nextX, nextY)});
+                    }
+                    else{
+                        actions.push_back({ladybugPos, Coordinate(nextX-2*dir.first, nextY-2*dir.second)});
+                    }
                 }
             }
         }
@@ -155,7 +215,8 @@ public:
     }
 
     vector<Action> getActionHBee(const Coordinate &hbeePos){
-        // HBee flies to two size step, and if it is occupied, jumps to the next position
+        // HBee flies to two size step, and if it is occupied, flies to the next position
+        // Bee flies over wall.
         vector<Action> actions;
 
         for (const auto &dir : directions) {
@@ -163,13 +224,15 @@ public:
             int nextY = hbeePos.y + 4 * dir.second;
 
             // Check if the next position is within the grid bounds
-            if (isInGrid(nextX, nextY)) {
+            while (isInGrid(nextX, nextY)==true) {
                 // If the next position is accessible, 
-                if ((isVacant(nextX, nextY) && !isWallAhead(hbeePos.x, hbeePos.y, dir) && !isWallAhead(nextX-2, nextY-2, dir))){
-                    
-                    
+                if ((isVacant(nextX, nextY))){
                     // If it's a valid move, append the destination coordinate to actions
                     actions.push_back({hbeePos, Coordinate(nextX, nextY)});
+                }
+                else{
+                    //jump ahead!
+                    nextX+=2*dir.first; nextY+=2*dir.second;
                 }
             }
         }
@@ -177,33 +240,75 @@ public:
         return actions;
     }
 
-    vector<Action> getActionHopper;
-    vector<Action> getActionBFly;
+    vector<Action> getActionHopper(const Coordinate &hopperPos){
+        // Hopper jumps to one size step, and if it is occupied, jumps to the next position
+        // Hopper jumps over wall.
+        vector<Action> actions;
 
+        for (const auto &dir : directions) {
+            int nextX = hopperPos.x + 2 * dir.first;
+            int nextY = hopperPos.y + 2 * dir.second;
+            // Check if the next position is within the grid bounds
+
+            while (isInGrid(nextX, nextY)) {
+                // If the next position is accessible, 
+                if ((isVacant(nextX, nextY))){
+                    // If it's a valid move, append the destination coordinate to actions
+                    actions.push_back({hopperPos, Coordinate(nextX, nextY)});
+                    break;
+                }
+                else{
+                    //jump ahead!
+                    nextX+=2*dir.first; nextY+=2*dir.second;
+                }
+            }
+        }
+
+        return actions;
+
+    }
+    vector<Action> getActionBFly; //yet to encounter butterfly.
+
+    State transition(const Action& action) {
+        // Create a copy of the current grid
+        vector<string> new_grid = grid;
+
+        Coordinate start = action.start;
+        Coordinate end = action.end;
+
+        char insect = grid[start.x][start.y];
+        char target_cell = grid[end.x][end.y];
+
+        // Update the grid based on the action
+        new_grid[start.x][start.y] = 'X';
+
+        if (target_cell == 'Y') { //if star present
+            new_grid[end.x][end.y] = 'X';
+        } 
+        else {
+            new_grid[end.x][end.y] = insect;
+        }
+
+        // Return a new State object with the modified grid
+        return State(new_grid, this->moves - 1);
+    }
+
+    bool isGoal(){ //check if state is goal state
+        return starCount==0;
+    }
+
+    bool isFailed(){
+        return moves==0 || moves<starCount; //little pruning
+    }
 };
 
-struct Coordinate {
-    int x;
-    int y;
-
-    Coordinate(int x_val, int y_val) : x(x_val), y(y_val) {}
-};
-
-// Class for representing actions
-class Action {
-public:
-    Coordinate start;
-    Coordinate end;
-};
 
 
 // Class for single player game using BFS
-class SinglePlayerGame {
+class Humbug {
 public:
-    using TransitionFunction = function<State(const State&, const Action&)>;
-
-    SinglePlayerGame(State initial, State goal, TransitionFunction transition)
-        : initial_state(initial), goal_state(goal), transition_function(transition) {}
+    Humbug(State initial)
+        : initial_state(initial) {}
 
     void bfs() {
         unordered_set<State, State::HashFunction> visited;
@@ -212,12 +317,21 @@ public:
         q.push({initial_state, {}});
 
         while (!q.empty()) {
-            auto [current_state, path] = q.front();
+            // auto [current_state, path] = q.front();
+            auto current_state = q.front().first;
+            auto path = q.front().second;
+
+            // cout << "new state" << endl;
+
             q.pop();
 
-            if (current_state == goal_state) {
+            if (current_state.isGoal()) {
                 print_solution(path);
                 return;
+            }
+
+            if (current_state.isFailed()){
+                continue;
             }
 
             if (visited.find(current_state) == visited.end()) {
@@ -225,26 +339,27 @@ public:
 
                 vector<Action> actions = current_state.getActions();
                 for (const auto &action : actions) {
-                    State next_state = transition_function(current_state, action);
+                    // cout << action.to_string() << " ";
+                
+                    State next_state = current_state.transition(action);
                     vector<Action> new_path = path;
                     new_path.push_back(action);
                     q.push({next_state, new_path});
                 }
+                cout << endl;
             }
         }
 
         cout << "No solution found." << endl;
     }
 
-private:
+public:
     State initial_state;
-    State goal_state;
-    TransitionFunction transition_function;
 
     void print_solution(const vector<Action> &path) const {
         cout << "Solution found:" << endl;
         for (const auto &action : path) {
-            cout << action.to_string() << " ";
+            cout << action.to_string() << endl;
         }
         cout << endl;
     }
@@ -252,19 +367,29 @@ private:
 
 // Example usage
 int main() {
-    State initial_state(0); // Example initial state
-    State goal_state(4); // Example goal state
+    string line;
+    vector<string> grid;
+    // vector<string> grid = {
+    //     ".........",
+    //     ".YWX.X.G.",
+    //     ".........",
+    //     "...X.X...",
+    //     ".........",
+    //     ".Y.L.X...",
+    //     "........."
+    // };
+    ifstream inputFile("encodings/level27.txt");
+    while (getline(inputFile, line)) {
+        grid.push_back(line);
+    }
+    inputFile.close();
+    int moves = 10;
+    State initial_state(grid, moves);
+    cout << initial_state.starCount << "\n";
+    Humbug game(initial_state);
 
-    // Define the transition function according to your game's rules
-    auto transition_function = [](const State &state, const Action &action) -> State {
-        if (action.name == "add1") return State(state.value + 1);
-        if (action.name == "add2") return State(state.value + 2);
-        if (action.name == "add3") return State(state.value + 3);
-        return state;
-    };
-
-    SinglePlayerGame game(initial_state, goal_state, transition_function);
     game.bfs();
+ 
 
     return 0;
 }
