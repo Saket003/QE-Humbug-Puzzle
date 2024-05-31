@@ -28,7 +28,7 @@ public:
     string insect;
 
     string to_string() const {
-        return "Move " + insect + " from " + "{" + std::to_string(start.x) + ',' + std::to_string(start.y) + "} to {" + std::to_string(end.x) + ',' + std::to_string(end.y) + "} .";
+        return "Move " + insect + " from " + "{" + std::to_string(start.x) + ',' + std::to_string(start.y) + "} to {" + std::to_string(end.x) + ',' + std::to_string(end.y) + "}";
     }
 };
 
@@ -55,7 +55,7 @@ public:
     void getStarCount(){
         for(int i = 0; i<n; i++){
             for(int j = 0; j<m; j++){
-                // cout << grid[i] << endl;
+                // cout << grid[i] << "\n";
                 if(grid[i][j]=='Y') starCount++;
             }
         }
@@ -336,6 +336,18 @@ public:
     bool isFailed(){
         return moves==0 || moves<starCount; //little pruning
     }
+
+    void printGrid(){
+        for(int i = 0; i<m ; i++) cout << " " << i;
+        cout << "\n";
+        for(int i = 0; i<n; i++){
+            cout << i << " ";
+            for(int j = 0; j<m; j++){
+                cout << grid[i][j] << " ";
+            }
+            cout << "\n";
+        }
+    }
 };
 
 
@@ -357,7 +369,7 @@ public:
             auto current_state = q.front().first;
             auto path = q.front().second;
 
-            // cout << "new state" << endl;
+            // cout << "new state" << "\n";
 
             q.pop();
 
@@ -375,8 +387,6 @@ public:
 
                 vector<Action> actions = current_state.getActions();
                 for (const auto &action : actions) {
-                    // cout << action.to_string() << " ";
-                
                     State next_state = current_state.transition(action);
                     vector<Action> new_path = path;
                     new_path.push_back(action);
@@ -385,18 +395,26 @@ public:
             }
         }
 
-        cout << "No solution found." << endl;
+        cout << "No solution found." << "\n";
     }
 
 public:
     State initial_state;
 
     void print_solution(const vector<Action> &path) const {
-        cout << "Solution found:" << endl;
+        cout << "Solution found! The following lines will have each move, and corresponding grid after applying the move." << "\n";
+        cout << "\n";
+
+        cout << "Original Grid:" << "\n";
+        State curState = initial_state;
+        curState.printGrid();
+
         for (const auto &action : path) {
-            cout << action.to_string() << endl;
+            cout << "\n" << "\n" << action.to_string() << " :" << "\n" << "\n";
+            curState = curState.transition(action);
+            curState.printGrid();
         }
-        cout << endl;
+        cout << "\n";
     }
 };
 
@@ -404,7 +422,7 @@ public:
 int main(int argc, char* argv[]) {
     //input from sh file.
     if (argc!= 3) {
-        cerr << "Usage: " << argv[0] << " <number_of_moves> <path_to_test_file>" << endl;
+        cerr << "Usage: " << argv[0] << " <number_of_moves> <path_to_test_file>" << "\n";
         return 1;
     }
 
@@ -413,8 +431,6 @@ int main(int argc, char* argv[]) {
 
     string line;
     vector<string> grid;
-
-    vector<int> fileNums;
 
     ifstream inputFile(testFilePath);
     while (getline(inputFile, line)) {
@@ -436,7 +452,7 @@ int main(int argc, char* argv[]) {
     
     auto end = high_resolution_clock::now();  //-- noting time
     auto duration = duration_cast<milliseconds>(end - start);
-    cout << "Time taken: " << duration.count() << " milliseconds" << endl;
+    cout << "Time taken: " << duration.count() << " milliseconds" << "\n";
 
     return 0;
 }

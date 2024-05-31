@@ -1,4 +1,6 @@
-. -> no boundary wall  
+The game state is represented as a matrix. The input will be given as a matrix. The matrix elements can belong to the above classes.   
+
+. -> no boundary wall, empty space
 X -> Normal block  
 Y -> Target block  
 W -> Wall  
@@ -6,12 +8,14 @@ P -> Spider
 G -> Grasshopper  
 S -> Snail   
 L -> LadyBug   
-F -> Butterfly  
+B -> Butterfly  
+H -> HoneyBee
 
-The input will be given as a matrix. The matrix elements can belong to the above classes. If the grid is n\*m, then the 
-matrix size is (2n+1)\*(2m+1).
+If the grid is n\*m, then the matrix size is (2n+1)\*(2m+1). The tiles of game are present in (odd, odd) indices. Rest are to store walls.  
 
-Refer sample image. The top left of matrix is the west corner of the image.
+Refer sample_image.jpg. The top left of matrix is the west corner of the image grid in game.
+
+The test case files consist of this grid, and the last line contains the number of moves to solve the level as per the original game.
 
 Sample Encoding:  
 ...........  
@@ -25,7 +29,7 @@ Sample Encoding:
 .......W...  
 
 ## Updates:
-- The code is working as a basic DFS as of 0954AM, 31st May.
+- The code is working as a basic BFS as of 0954AM, 31st May.
 
 - Test Results:  <0.4 sec on most examples, and <4.5 secs on all examples.
 
