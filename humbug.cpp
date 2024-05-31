@@ -4,7 +4,9 @@
 #include <vector>
 #include <functional>
 #include <bits/stdc++.h>
+#include <chrono>
 
+using namespace std::chrono;
 using namespace std;
 
 // Class for representing the game state
@@ -23,9 +25,10 @@ class Action {
 public:
     Coordinate start;
     Coordinate end;
+    string insect;
 
     string to_string() const {
-        return "Move insect at {" + std::to_string(start.x) + ',' + std::to_string(start.y) + "} to {" + std::to_string(end.x) + ',' + std::to_string(end.y) + "} .";
+        return "Move " + insect + " from " + "{" + std::to_string(start.x) + ',' + std::to_string(start.y) + "} to {" + std::to_string(end.x) + ',' + std::to_string(end.y) + "} .";
     }
 };
 
@@ -112,7 +115,12 @@ public:
                     // Append actions for HBee
                     vector<Action> hBeeActions = getActionHBee(insectPos);
                     actions.insert(actions.end(), hBeeActions.begin(), hBeeActions.end());
-                } else {
+                } else if (insect=='B') {
+                    // Append actions for BFly
+                    vector<Action> bflyActions = getActionBFly(insectPos);
+                    actions.insert(actions.end(), bflyActions.begin(), bflyActions.end());
+                }
+                else {
                     // No actions for other insects
                 }
             }
@@ -151,9 +159,11 @@ public:
                 curX = nextX - 2*dir.first;
                 curY = nextY - 2*dir.second;
 
+                if(!isVacant(nextX,nextY)) break;
+
                 // check for wall|insect...
-                if(isWallAhead(nextX, nextY, dir) || (isInGrid(nextX+2*dir.first, nextY+2*dir.second) && !isVacant(nextX+2*dir.first, nextY+2*dir.second))){
-                    actions.push_back({spiderPos, Coordinate(nextX, nextY)});
+                if(isWallAhead(nextX, nextY, dir) || ((isInGrid(nextX+2*dir.first, nextY+2*dir.second) && !isVacant(nextX+2*dir.first, nextY+2*dir.second)))){
+                    actions.push_back({spiderPos, Coordinate(nextX, nextY), "spider"});
                     break;
                 }
                 // Update nextX and nextY for the next step in the same direction
@@ -178,7 +188,7 @@ public:
                 // Check if the next position is vacant
                 if (isVacant(nextX, nextY) && !isWallAhead(snailPos.x, snailPos.y, dir)) {
                     // If it's a valid move, append the destination coordinate to actions
-                    actions.push_back({snailPos, Coordinate(nextX, nextY)});
+                    actions.push_back({snailPos, Coordinate(nextX, nextY), "snail"});
                 }
             }
         }
@@ -194,18 +204,18 @@ public:
             int nextX = ladybugPos.x + 4 * dir.first;
             int nextY = ladybugPos.y + 4 * dir.second;
 
-            // Check if the next position is within the grid bounds
-            if (isInGrid(nextX, nextY)) {
+            // Check if the next position is within the grid bosunds
+            if (isInGrid(nextX, nextY) || isInGrid(nextX-2*dir.first, nextY-2*dir.second)) {
                 // Check if the first step is vacant and accesible
                 if (isVacant(nextX-2*dir.first, nextY-2*dir.second) && !isWallAhead(ladybugPos.x, ladybugPos.y, dir)) {
                     
                     // check if second step is vacant and accesible
-                    if((isVacant(nextX, nextY) && !isWallAhead(nextX-2*dir.first, nextY-2*dir.second, dir))){
+                    if((isInGrid(nextX, nextY) && isVacant(nextX, nextY) && !isWallAhead(nextX-2*dir.first, nextY-2*dir.second, dir))){
                     // If it's a valid move, append the destination coordinate to actions
-                        actions.push_back({ladybugPos, Coordinate(nextX, nextY)});
+                        actions.push_back({ladybugPos, Coordinate(nextX, nextY), "ladybug"});
                     }
-                    else{
-                        actions.push_back({ladybugPos, Coordinate(nextX-2*dir.first, nextY-2*dir.second)});
+                    else if(isWallAhead(nextX-2*dir.first, nextY-2*dir.second, dir) || (isInGrid(nextX, nextY) && !isVacant(nextX, nextY))){
+                        actions.push_back({ladybugPos, Coordinate(nextX-2*dir.first, nextY-2*dir.second), "ladybug"});
                     }
                 }
             }
@@ -228,7 +238,8 @@ public:
                 // If the next position is accessible, 
                 if ((isVacant(nextX, nextY))){
                     // If it's a valid move, append the destination coordinate to actions
-                    actions.push_back({hbeePos, Coordinate(nextX, nextY)});
+                    actions.push_back({hbeePos, Coordinate(nextX, nextY), "honeybee"});
+                    break;
                 }
                 else{
                     //jump ahead!
@@ -254,7 +265,7 @@ public:
                 // If the next position is accessible, 
                 if ((isVacant(nextX, nextY))){
                     // If it's a valid move, append the destination coordinate to actions
-                    actions.push_back({hopperPos, Coordinate(nextX, nextY)});
+                    actions.push_back({hopperPos, Coordinate(nextX, nextY),"hopper"});
                     break;
                 }
                 else{
@@ -267,7 +278,32 @@ public:
         return actions;
 
     }
-    vector<Action> getActionBFly; //yet to encounter butterfly.
+    vector<Action> getActionBFly(const Coordinate &bflyPos){
+        // Bfly flies to three size step, and if it is occupied, flies to the next position
+        // flies over wall.
+        vector<Action> actions;
+
+        for (const auto &dir : directions) {
+            int nextX = bflyPos.x + 6 * dir.first;
+            int nextY = bflyPos.y + 6 * dir.second;
+
+            // Check if the next position is within the grid bounds
+            while (isInGrid(nextX, nextY)) {
+                // If the next position is accessible, 
+                if ((isVacant(nextX, nextY))){
+                    // If it's a valid move, append the destination coordinate to actions
+                    actions.push_back({bflyPos, Coordinate(nextX, nextY), "butterfly"});
+                    break;
+                }
+                else{
+                    //jump ahead!
+                    nextX+=2*dir.first; nextY+=2*dir.second;
+                }
+            }
+        }
+
+        return actions;
+    }
 
     State transition(const Action& action) {
         // Create a copy of the current grid
@@ -346,7 +382,6 @@ public:
                     new_path.push_back(action);
                     q.push({next_state, new_path});
                 }
-                cout << endl;
             }
         }
 
@@ -366,30 +401,42 @@ public:
 };
 
 // Example usage
-int main() {
+int main(int argc, char* argv[]) {
+    //input from sh file.
+    if (argc!= 3) {
+        cerr << "Usage: " << argv[0] << " <number_of_moves> <path_to_test_file>" << endl;
+        return 1;
+    }
+
+    int moves = stoi(argv[1]);
+    string testFilePath = argv[2];
+
     string line;
     vector<string> grid;
-    // vector<string> grid = {
-    //     ".........",
-    //     ".YWX.X.G.",
-    //     ".........",
-    //     "...X.X...",
-    //     ".........",
-    //     ".Y.L.X...",
-    //     "........."
-    // };
-    ifstream inputFile("encodings/level27.txt");
+
+    vector<int> fileNums;
+
+    ifstream inputFile(testFilePath);
     while (getline(inputFile, line)) {
         grid.push_back(line);
     }
+
+    //int moves = stoi(grid[grid.size()-1]);
+    grid.pop_back();
+
     inputFile.close();
-    int moves = 10;
+    // int moves = 10;
+ 
+    auto start = high_resolution_clock::now();  //-- noting time
+
     State initial_state(grid, moves);
-    cout << initial_state.starCount << "\n";
     Humbug game(initial_state);
 
     game.bfs();
- 
+    
+    auto end = high_resolution_clock::now();  //-- noting time
+    auto duration = duration_cast<milliseconds>(end - start);
+    cout << "Time taken: " << duration.count() << " milliseconds" << endl;
 
     return 0;
 }

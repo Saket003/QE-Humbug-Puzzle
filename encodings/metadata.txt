@@ -1,0 +1,10 @@
+. -> no boundary wall
+X -> Normal tile
+Y -> Target block
+W -> Wall
+P -> Spider
+G -> Grasshopper
+S -> Snail
+L -> Ladybug
+B -> Butterfly
+H -> Honeybee

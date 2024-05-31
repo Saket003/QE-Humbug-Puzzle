@@ -23,3 +23,10 @@ Sample Encoding:
 ...........  
 .......Y...  
 .......W...  
+
+## Updates:
+- The code is working as a basic DFS as of 0954AM, 31st May.
+
+- Test Results:  <0.4 sec on most examples, and <4.5 secs on all examples.
+
+- Optimisations: The algorithm is a simple BFS over the state space. One extra pruning condition is that if moves < no. of empty targets, return false. This is valid for all levels 1-90.
