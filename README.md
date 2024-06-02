@@ -32,7 +32,7 @@ Consider level 10 :
 
 The game state is represented as a matrix. The input will be given as a matrix. The matrix elements can belong to the above classes.   
 
-. -> no boundary wall, empty space
+. -> no boundary wall, empty space  
 X -> Normal block  
 Y -> Target block  
 W -> Wall  
