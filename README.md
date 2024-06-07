@@ -69,3 +69,21 @@ Sample Encoding:
 .......Y...  
 .......W...  
 
+### Test Case Generation (New)
+
+Install the requirements listed in `requirements.txt`. Run in terminal
+```
+pip install -r requirements.txt
+```
+
+Run in terminal
+```  
+python test-case-generator.py
+```
+Output will be saved to `level.txt`.
+
+Sample Encoding:
+
+<div align = "center">
+   <img src="assets/test-gen.jpg" alt="test_gen" width = 360>
+</div>
