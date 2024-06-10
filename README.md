@@ -14,8 +14,14 @@ This program can be used to solve the levels 1-90 of the game. Pull requests are
 - Download the Humbug Puzzle app.
 - Clone this repository to your device. 
 - On terminal, run this command:  
+
+Linux/MacOS
 ```  
-bash run.sh <maxMoves> testcases/<levelNumber>.txt
+bash run.sh <maxMoves> testcases/level<levelNumber>.txt
+```
+Windows
+```
+.\run.bat <maxMoves> testcases/level<levelNumber>.txt
 ```
 - Follow the steps printed in terminal, and proceed to the next level.  
    
@@ -30,18 +36,21 @@ Consider level 10 :
    <img src="assets/sample_image.jpg" alt="humbug_level_10" width=360>
 </div>
 
-The game state is represented as a matrix. The input will be given as a matrix. The matrix elements can belong to the above classes.   
+The game state is represented as a matrix. The input will be given as a matrix. The matrix elements can belong to the above classes.  
 
-. -> no boundary wall, empty space  
-X -> Normal block  
-Y -> Target block  
-W -> Wall  
-P -> Spider   
-G -> Grasshopper  
-S -> Snail   
-L -> LadyBug   
-B -> Butterfly  
-H -> HoneyBee
+| Token | Description               |
+|-------|---------------------------|
+| .     | No boundary wall, empty space |
+| X     | Normal block              |
+| Y     | Target block              |
+| W     | Wall                      |
+| P     | Spider                    |
+| G     | Grasshopper               |
+| S     | Snail                     |
+| L     | LadyBug                   |
+| B     | Butterfly                 |
+| H     | HoneyBee                  |
+
 
 If the grid is n\*m, then the matrix size is (2n+1)\*(2m+1). The tiles of game are present in (odd, odd) indices. Rest are to store walls.  
 
@@ -60,3 +69,21 @@ Sample Encoding:
 .......Y...  
 .......W...  
 
+### Test Case Generation (New)
+
+Install the requirements listed in `requirements.txt`. Run in terminal
+```
+pip install -r requirements.txt
+```
+
+Run in terminal
+```  
+python test-case-generator.py
+```
+Output will be saved to `level.txt`.
+
+Sample Encoding:
+
+<div align = "center">
+   <img src="assets/test-gen.jpg" alt="test_gen" width = 360>
+</div>
